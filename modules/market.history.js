@@ -1,33 +1,33 @@
-module.exports.init = function(){
+module.exports.init = function() {
     var userid = JSON.parse(localStorage.getItem('users.code.activeWorld'))[0]._id;
 
-    module.ajaxGet("https://screeps.com/api/user/rooms?id=" + userid, function(data, error){
-        if (data && data.rooms){
+    module.ajaxGet("https://screeps.com/api/user/rooms?id=" + userid, function(data, error) {
+        if (data && data.rooms) {
             module.exports.rooms = data.rooms;
-        }else{
+        } else {
             module.exports.rooms = [];
             console.error(data || error);
         }
 
         module.exports.update();
-    });    
+    });
 }
 
-module.exports.update = function(){
-    module.getScopeData("market-history", "History", ['History.data.money.list'], function(history){
+module.exports.update = function() {
+    module.getScopeData("market-history", "History", ['History.data.money.list'], function(history) {
         var list = history.data.money.list;
 
         var elements = document.getElementsByClassName('market-history-description');
 
-        for(var i = 0; i < list.length; i++){
+        for (var i = 0; i < list.length; i++) {
             var historyObj = list[i];
-            if (historyObj.type == "market.fee"){
+            if (historyObj.type == "market.fee") {
 
-            } 
-            else if (historyObj.type == "market.buy" || historyObj.type == "market.sell"){
+            } else if (historyObj.type == "market.buy" || historyObj.type == "market.sell") {
                 var market = list[i].market
                 var type = market.resourceType;
                 var roomName = market.roomName;
+                var NPC = market.npc;
                 var targetRoomName = market.targetRoomName;
                 var transactionCost = module.exports.calcTransactionCost(market.amount, roomName, targetRoomName);
                 var targetRoomIsMine = false;
@@ -40,7 +40,7 @@ module.exports.update = function(){
                                         <img src="https://s3.amazonaws.com/static.screeps.com/upload/mineral-icons/energy.png">
                                       </a>`;
 
-                if (module.exports.rooms.includes(targetRoomName)){
+                if (module.exports.rooms.includes(targetRoomName)) {
                     let temp = roomName;
                     roomName = targetRoomName;
                     targetRoomName = temp;
@@ -49,32 +49,36 @@ module.exports.update = function(){
 
                 var roomLink = `<a href="#!/room/${roomName}">${roomName}</a>`;
                 var targetRoomLink = `<a href="#!/room/${targetRoomName}">${targetRoomName}</a>`;
-                var infoCircle = '<div class="fa fa-question-circle" title=\'' + JSON.stringify(list[i].market) + '\'></div>'
-                var transactionCostHtml = `(<span style="color:#ff8f8f;margin-right:-12px">-${transactionCost} ${resourceEnergy}</span>)`
+                var infoCircle = '<div class="fa fa-question-circle" title=\'' + JSON.stringify(list[i].market) + '\'></div>';
+                var transactionCostHtml = `(<span style="color:#ff8f8f;margin-right:-12px">-${transactionCost} ${resourceEnergy}</span>)`;
+                var isNPCHtml = '';
+                if (NPC) {
+                    isNPCHtml = `[NPC]`;
+                }
 
-                if (historyObj.type == "market.buy"){
-                    if (targetRoomIsMine){
-                        elements[i].innerHTML = `${roomLink} bought ${market.amount}${resourceIcon} (${market.price}) from ${targetRoomLink} ${transactionCostHtml} ${infoCircle}`;
-                    }else{
-                        elements[i].innerHTML = `${roomLink} bought ${market.amount}${resourceIcon} (${market.price}) from ${targetRoomLink} ${infoCircle}`;
-                    }   
-                    
-                }else{
-                    if (targetRoomIsMine){
-                        elements[i].innerHTML = `${roomLink} sold ${market.amount}${resourceIcon} (${market.price}) to ${targetRoomLink} ${transactionCostHtml} ${infoCircle}`;
-                    }else{
-                        elements[i].innerHTML = `${roomLink} sold ${market.amount}${resourceIcon} (${market.price}) to ${targetRoomLink} ${infoCircle}`;
+                if (historyObj.type == "market.buy") {
+                    if (targetRoomIsMine) {
+                        elements[i].innerHTML = `${roomLink} bought ${market.amount}${resourceIcon} (${market.price}) from ${targetRoomLink} ${transactionCostHtml} ${isNPCHtml} ${infoCircle}`;
+                    } else {
+                        elements[i].innerHTML = `${roomLink} bought ${market.amount}${resourceIcon} (${market.price}) from ${targetRoomLink} ${isNPCHtml} ${infoCircle}`;
+                    }
+
+                } else {
+                    if (targetRoomIsMine) {
+                        elements[i].innerHTML = `${roomLink} sold ${market.amount}${resourceIcon} (${market.price}) to ${targetRoomLink} ${transactionCostHtml} ${isNPCHtml} ${infoCircle}`;
+                    } else {
+                        elements[i].innerHTML = `${roomLink} sold ${market.amount}${resourceIcon} (${market.price}) to ${targetRoomLink} ${isNPCHtml} ${infoCircle}`;
                     }
                 }
             }
-            
+
         }
 
     });
 }
 
 /* taken from @screeps market */
-module.exports.calcTransactionCost = function (amount, roomName1, roomName2) {
+module.exports.calcTransactionCost = function(amount, roomName1, roomName2) {
 
     var distance = module.exports.calcRoomsDistance(roomName1, roomName2, true);
 
@@ -83,7 +87,7 @@ module.exports.calcTransactionCost = function (amount, roomName1, roomName2) {
 }
 
 /* taken from @screeps utils */
-module.exports.calcRoomsDistance = function (room1, room2, continuous) {
+module.exports.calcRoomsDistance = function(room1, room2, continuous) {
     var _exports$roomNameToXY = module.exports.roomNameToXY(room1);
 
     var _exports$roomNameToXY2 = module.exports._slicedToArray(_exports$roomNameToXY, 2);
@@ -105,11 +109,11 @@ module.exports.calcRoomsDistance = function (room1, room2, continuous) {
         var height = 162;
 
         // client constants is not up to date with server constants
-        if (constants.WORLD_WIDTH > width){
+        if (constants.WORLD_WIDTH > width) {
             width = constants.WORLD_WIDTH;
         }
 
-        if (constants.WORLD_HEIGHT > height){
+        if (constants.WORLD_HEIGHT > height) {
             height = constants.WORLD_HEIGHT;
         }
 
@@ -120,7 +124,7 @@ module.exports.calcRoomsDistance = function (room1, room2, continuous) {
 }
 
 /* taken from @screeps utils */
-module.exports.roomNameToXY = function (name) {
+module.exports.roomNameToXY = function(name) {
 
     name = name.toUpperCase();
 
