@@ -142,9 +142,43 @@ module.exports.update = function(){
 module.exports.getTabElement = function(resource){
     var amount = 0;
     // Todo inject css...
+    var boostDesc = '';
+    switch (resource) {
+        case 'XUH2O':
+            boostDesc= 'ATK';
+            break;
+        case 'XUHO2':
+            boostDesc= 'HRVST';
+            break;
+        case 'XKH2O':
+            boostDesc= 'CARRY';
+            break;
+        case 'XKHO2':
+            boostDesc= 'RNGD';
+            break;
+        case 'XLH2O':
+            boostDesc= 'REPAIR';
+            break;
+        case 'XLHO2':
+            boostDesc= 'HEAL';
+            break;
+        case 'XZH2O':
+            boostDesc= 'DSMNTL';
+            break;
+        case 'XZHO2':
+            boostDesc= 'MOVE';
+            break;
+        case 'XGH2O':
+            boostDesc= 'UPGRD';
+            break;
+        case 'XGHO2':
+            boostDesc= 'TOUGH';
+            break;
+    }
     var tabElementText = `<a id="sc-${resource}" class="market-resource" href="https://screeps.com/a/#!/market/all/${resource}" style="background: #333;padding: 8px 10px;margin-top: 3px;display: flex;justify-content: space-between;font-size: 14px;cursor: pointer;text-decoration: none;color: #eee;" onmouseover="this.style.backgroundColor='#444'" onmouseout="this.style.backgroundColor='#333'">
         <div class="resource-name">
         <img src="https://s3.amazonaws.com/static.screeps.com/upload/mineral-icons/${resource}.png" style="margin-right: 3px;">
+        ${boostDesc}
         </div>
         <div id="sc-val-${resource}" style="margin-bottom:-6px">
             <svg class="uil-ellipsis" height="20px" preserveaspectratio="xMidYMid" viewbox="0 0 100 100" width="20px" xmlns="http://www.w3.org/2000/svg">
