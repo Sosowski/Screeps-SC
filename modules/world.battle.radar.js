@@ -50,7 +50,7 @@ module.exports.openModal = function(){
         <div class="modal-dialog" style="width:900px">
             <div class="modal-content" modal-window-content="">
                 <section class="dlg-flag">
-                    <div class="modal-body">
+                    <div class="modal-body" style="max-height:500px;overflow-y:scroll;">
 
                         <div class="panel battle-radar" style="background-color:inherit">
                             <button class="md-button md-ink-ripple" type="button" style="position: absolute;right: 20px;">
