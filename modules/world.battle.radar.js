@@ -1,48 +1,68 @@
-module.exports.init = function(){
-    module.dispatchEvent({event: 'xhttp', url:'http://www.leagueofautomatednations.com/map/rooms.js'}, function(response){
-        module.exports.rooms = JSON.parse(response.data);
+module.exports.init = function() {
+    module.dispatchEvent({
+        event: 'xhttp',
+        url: 'http://www.leagueofautomatednations.com/map/shard0/rooms.js'
+    }, function(response0) {
+        module.dispatchEvent({
+            event: 'xhttp',
+            url: 'http://www.leagueofautomatednations.com/map/shard1/rooms.js'
+        }, function(response1) {
 
-        module.dispatchEvent({event: 'xhttp', url:'http://www.leagueofautomatednations.com/alliances.js'}, function(response){
-            module.alliances = JSON.parse(response.data);
+            module.exports.shards = {}
+            module.exports.shards["shard0"] = {
+                rooms: JSON.parse(response0.data)
+            };
+            module.exports.shards["shard1"] = {
+                rooms: JSON.parse(response1.data)
+            };
 
-            module.userToAlliance = {}
+            module.dispatchEvent({
+                event: 'xhttp',
+                url: 'http://www.leagueofautomatednations.com/alliances.js'
+            }, function(response) {
+                module.alliances = JSON.parse(response.data);
 
-            for(var alliance in module.alliances){
-                var members = module.alliances[alliance].members;
-                for(var member in members){
-                    var memberName = members[member];
+                module.userToAlliance = {}
 
-                    module.userToAlliance[memberName] = alliance;
+                for (var alliance in module.alliances) {
+                    var members = module.alliances[alliance].members;
+                    for (var member in members) {
+                        var memberName = members[member];
+
+                        module.userToAlliance[memberName] = alliance;
+                    }
                 }
-            }
 
-            module.getScopeData("md-sidenav-left", "Top", [], function(Top){
-                var radarSvg = module.exports.getRadarSvg();
-                var sideBar = $(`<a class="md-button md-ink-ripple">
-                                    <span style="margin: 0 10px 0 3px;opacity: 0.4;top:2px;position:relative;">
-                                        ${radarSvg}
-                                    </span>
-                                    <span style="bottom: 5px;position: relative;">
-                                        Battle Radar
-                                    </span>
-                                </a>`)
+                module.getScopeData("md-sidenav-left", "Top", [], function(Top) {
+                    var radarSvg = module.exports.getRadarSvg();
+                    var sideBar = $(`<a class="md-button md-ink-ripple">
+                                        <span style="margin: 0 10px 0 3px;opacity: 0.4;top:2px;position:relative;">
+                                            ${radarSvg}
+                                        </span>
+                                        <span style="bottom: 5px;position: relative;">
+                                            Battle Radar
+                                        </span>
+                                    </a>`)
 
-                sideBar.click(function(){
-                    Top.toggleMainNav();
-                    module.exports.openModal();
+                    sideBar.click(function() {
+                        Top.toggleMainNav();
+                        module.exports.openModal();
+                    });
+
+                    var leftBar = $(".md-sidenav-left a").eq(3).after(sideBar);
                 });
-
-                var leftBar = $(".md-sidenav-left a").eq(3).after(sideBar);
             });
+
         });
+
     });
 }
 
-module.exports.update = function(){
+module.exports.update = function() {
     // not needed as we dont switch url in battle radar popup.
 }
 
-module.exports.openModal = function(){
+module.exports.openModal = function() {
     var svgNuke = module.exports.getNukeSvg();
     var svgPvp = module.exports.getPvpSvg();
 
@@ -102,7 +122,7 @@ module.exports.openModal = function(){
                                                     <th class="orders-table__col--left">Defending room</th>
                                                     <th>Attacker</th>
                                                     <th>Alliance</th>
-                                                    <th>Attacking creeps</th>
+                                                    <th>Shard</th>
                                                     <th>Time</th>
                                                 </tr>
                                             </tbody>
@@ -126,28 +146,26 @@ module.exports.openModal = function(){
 
     $('<div id="sc-modal-background" class="modal-backdrop fade in" style="z-index: 1040;"></div>').appendTo('body');
 
-    $('#sc-modal-battle-cancel').click(function() { 
+    $('#sc-modal-battle-cancel').click(function() {
         module.exports.closeModal();
     });
 
-    $('#sc-modal-dismiss').click(function() { 
+    $('#sc-modal-dismiss').click(function() {
         module.exports.closeModal();
     });
 
-    module.ajaxGet("https://screeps.com/api/game/time", function(gameTime){
-
-        module.exports.displayNukeTab(gameTime);
-        module.exports.displayPvPTab(gameTime);
-
+    module.ajaxGet("https://screeps.com/api/game/time?shard=" + module.getCurrentShard(), function(data) {
+        module.exports.displayNukeTab(data.time, module.getCurrentShard());
+        module.exports.displayPvPTab(data.time, module.getCurrentShard());
     });
 
-    $('#sc-modal-battle-ok').click(function() { 
+    $('#sc-modal-battle-ok').click(function() {
         module.exports.closeModal();
     });
 
     $("<style>")
-    .prop("type", "text/css")
-    .html(`
+        .prop("type", "text/css")
+        .html(`
     .battle-radar{
         margin-bottom: 0;
     }
@@ -192,69 +210,76 @@ module.exports.openModal = function(){
         cursor: pointer;
     }
     `)
-    .appendTo("head");
+        .appendTo("head");
 
-    $('.panel .nav-tabs').on('click', 'a', function(e){
-      var tab  = $(this).parent(),
-          tabIndex = tab.index(),
-          tabPanel = $(this).closest('.panel'),
-          tabPane = tabPanel.find('.tab-pane').eq(tabIndex);
+    $('.panel .nav-tabs').on('click', 'a', function(e) {
+        var tab = $(this).parent(),
+            tabIndex = tab.index(),
+            tabPanel = $(this).closest('.panel'),
+            tabPane = tabPanel.find('.tab-pane').eq(tabIndex);
 
-      if (tab.hasClass("active") == false){
-          var prevActive = tabPanel.find('.active');
-          prevActive.removeClass('active');
-          tab.addClass('active');
-          tabPane.addClass('active');
-      }
+        if (tab.hasClass("active") == false) {
+            var prevActive = tabPanel.find('.active');
+            prevActive.removeClass('active');
+            tab.addClass('active');
+            tabPane.addClass('active');
+        }
 
 
-      
+
     });
 }
 
-module.exports.getAllianceHtml = function(playerName){
+module.exports.getAllianceHtml = function(playerName) {
     var alliance = module.userToAlliance[playerName];
     var allianceHtml = "";
 
-    if (alliance){
+    if (alliance) {
         var logo = module.alliances[alliance].logo;
-        if (logo){
+        if (logo) {
             var logoURL = "http://www.leagueofautomatednations.com/obj/" + module.alliances[alliance].logo;
             allianceHtml = `<a href='http://www.leagueofautomatednations.com/a/${alliance}'>
                     <img class="sc-battle-round" src='${logoURL}' height='16' width='16'>${alliance}</a>`;
-         }else{
+        } else {
             allianceHtml = `<a href='http://www.leagueofautomatednations.com/a/${alliance}'>${alliance}</a>`;
-         }
+        }
     }
 
     return allianceHtml;
 }
 
-module.exports.displayNukeTab = function(gameTime){
-    module.ajaxGet("https://screeps.com/api/experimental/nukes", function(data){
-        if (data.nukes.length === 0){
-            $('#sc-tbody-battle-radar').append("<div style='position: relative;left: 200%;font-size: 16px;padding-top: 10px;''> The world is at peace.</div>");
-        }else{
-            data.nukes.forEach(function(nukeInfo){
+module.exports.displayNukeTab = function(gameTime, shard) {
+    module.ajaxGet("https://screeps.com/api/experimental/nukes", function(data) {
+        if (data.error) {
+            $('#sc-tbody-battle-radar').append(`<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''>${data.error}</div>`);
+        } else if (!shard) {
+            $('#sc-tbody-battle-radar-pvp').append(`<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''>Failed to read shard.</div>`);
+        } else if (data.nukes.length === 0) {
+            $('#sc-tbody-battle-radar').append("<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''> The world is at peace.</div>");
+        } else {
+            data.nukes.forEach(function(nukeInfo) {
 
                 var defenderName = "Unknown";
                 var attackerName = "Unknown";
 
-                if (module.exports.rooms[nukeInfo.room] && module.exports.rooms[nukeInfo.room].owner){
-                    defenderName = module.exports.rooms[nukeInfo.room].owner;
+                var defenderRoom = module.exports.shards[shard].rooms[nukeInfo.room];
+                var attackerRoom = module.exports.shards[shard].rooms[nukeInfo.launchRoomName];
+
+                if (defenderRoom && defenderRoom.owner) {
+                    defenderName = defenderRoom.owner;
                 }
 
-                if (module.exports.rooms[nukeInfo.launchRoomName] && module.exports.rooms[nukeInfo.launchRoomName].owner){
-                    attackerName = module.exports.rooms[nukeInfo.launchRoomName].owner;
+                if (attackerRoom && attackerRoom.owner) {
+                    attackerName = attackerRoom.owner;
                 }
 
-                module.exports.getBadge(defenderName, 16, 16, function(badgeDefender){
-                    module.exports.getBadge(attackerName, 16, 16, function(badgeAttacker){
+                module.exports.getBadge(defenderName, 16, 16, function(badgeDefender) {
+                    module.exports.getBadge(attackerName, 16, 16, function(badgeAttacker) {
 
 
                         var defenderAllianceHtml = module.exports.getAllianceHtml(defenderName);
                         var attackerAllianceHtml = module.exports.getAllianceHtml(attackerName);
-                        var timeLeft = nukeInfo.landTime - gameTime.time;
+                        var timeLeft = nukeInfo.landTime - gameTime;
 
                         var row = $(`<tr>
                                 <td>
@@ -269,7 +294,7 @@ module.exports.displayNukeTab = function(gameTime){
                                     ${defenderAllianceHtml}
                                 </td>
                                 <td class="orders-table__col--left">
-                                    <a href='https://screeps.com/a/#!/room/${nukeInfo.room}'>${nukeInfo.room}</a>
+                                    <a href='https://screeps.com/a/#!/room/${shard}/${nukeInfo.room}'>${nukeInfo.room}</a>
                                 </td>
                                 <td>
                                     <a href='https://screeps.com/a/#!/profile/${attackerName}'>${attackerName}</a>
@@ -278,7 +303,7 @@ module.exports.displayNukeTab = function(gameTime){
                                     ${attackerAllianceHtml} 
                                 </td>
                                 <td>
-                                    <a href='https://screeps.com/a/#!/room/${nukeInfo.launchRoomName}'>${nukeInfo.launchRoomName}</a>
+                                    <a href='https://screeps.com/a/#!/room/${shard}/${nukeInfo.launchRoomName}'>${nukeInfo.launchRoomName}</a>
                                 </td>
                                 <td>
                                     ${timeLeft} ticks
@@ -300,25 +325,31 @@ module.exports.displayNukeTab = function(gameTime){
     });
 }
 
-module.exports.displayPvPTab = function(gameTime){
-    module.ajaxGet("https://screeps.com/api/experimental/pvp?interval=100", function(data){
-        if (data.rooms.length === 0){
-            $('#sc-tbody-battle-radar-pvp').append("<div style='position: relative;left: 200%;font-size: 16px;padding-top: 10px;''> The world is at peace.</div>");
-        }else{
-            data.rooms.forEach(function(roomInfo){
+module.exports.displayPvPTab = function(gameTime, shard) {
+    module.ajaxGet("https://screeps.com/api/experimental/pvp?interval=100", function(data) {
+        if (data.error === 0) {
+            $('#sc-tbody-battle-radar-pvp').append(`<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''>${data.error}</div>`);
+        } else if (!shard) {
+            $('#sc-tbody-battle-radar-pvp').append(`<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''>Failed to read shard.</div>`);
+        } else if (data.pvp[shard].rooms.length === 0) {
+            $('#sc-tbody-battle-radar-pvp').append("<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''> The world is at peace.</div>");
+        } else {
+            data.pvp[shard].rooms.forEach(function(roomInfo) {
 
                 var defenderName = "Unknown";
                 var attackerName = "Unknown";
 
-                if (module.exports.rooms[roomInfo._id] && module.exports.rooms[roomInfo._id].owner){
-                    defenderName = module.exports.rooms[roomInfo._id].owner;
+                var defenderRoom = module.exports.shards[shard].rooms[roomInfo._id];
+
+                if (defenderRoom && defenderRoom.owner) {
+                    defenderName = defenderRoom.owner;
                 }
 
                 // TODO implement attacker without using history.
 
-                module.exports.getBadge(defenderName, 16, 16, function(badgeDefender){
+                module.exports.getBadge(defenderName, 16, 16, function(badgeDefender) {
                     var defenderAllianceHtml = module.exports.getAllianceHtml(defenderName);
-                    var timeAgo = gameTime.time - roomInfo.lastPvpTime;
+                    var timeAgo = gameTime - roomInfo.lastPvpTime;
 
                     var row = $(`<tr>
                             <td>
@@ -333,7 +364,7 @@ module.exports.displayPvPTab = function(gameTime){
                                 ${defenderAllianceHtml}
                             </td>
                             <td class="orders-table__col--left">
-                                <a href='https://screeps.com/a/#!/room/${roomInfo._id}'>${roomInfo._id}</a>
+                                <a href='https://screeps.com/a/#!/room/${shard}/${roomInfo._id}'>${roomInfo._id}</a>
                             </td>
                             <td>
 
@@ -342,7 +373,7 @@ module.exports.displayPvPTab = function(gameTime){
 
                             </td>
                             <td>
-
+                                ${shard}
                             </td>
                             <td>
                                 ${timeAgo} ticks ago.
@@ -362,7 +393,7 @@ module.exports.displayPvPTab = function(gameTime){
     });
 }
 
-module.exports.getLatestHistory = function(room, startTime, cb, limit = 100){
+module.exports.getLatestHistory = function(room, startTime, cb, limit = 100) {
     // TODO find a better way to get defender and attacker.
 
     // https://screeps.com/room-history/E62N22/15911540.json
@@ -370,28 +401,28 @@ module.exports.getLatestHistory = function(room, startTime, cb, limit = 100){
     // ticks[tick_id].type == 'creep'
     // ticks[tick_id].user == '<GUID>'
 
-    if (limit <= 0){
+    if (limit <= 0) {
         console.warn("failed to get history for room: " + room);
         cb(undefined);
-    }else{
-        module.ajaxGet(`https://screeps.com/room-history/${room}/${startTime}.json`, function(data, status){
-            if (data){
+    } else {
+        module.ajaxGet(`https://screeps.com/room-history/${room}/${startTime}.json`, function(data, status) {
+            if (data) {
                 console.log("success: " + room + " after " + (100 - limit) + " tries");
                 cb(data);
-            }else{
+            } else {
                 module.exports.getLatestHistory(room, startTime - 1, cb, limit - 1);
             }
-            
+
         });
     }
 }
 
-module.exports.closeModal = function(){
-    $('#sc-modal-battle').remove(); 
-    $('#sc-modal-background').remove(); 
+module.exports.closeModal = function() {
+    $('#sc-modal-battle').remove();
+    $('#sc-modal-background').remove();
 }
 
-module.exports.getPvpSvg = function(){
+module.exports.getPvpSvg = function() {
     return `<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
                 <symbol id="sc-svg-pvp" viewBox="25 25 50 50" width="24px" height="24px" fill="#999">
                     <path d="M51.31,
@@ -421,7 +452,7 @@ module.exports.getPvpSvg = function(){
             </svg>`
 }
 
-module.exports.getRadarSvg = function(){
+module.exports.getRadarSvg = function() {
     return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 48 48" version="1.1" x="0px" y="0px" width="24px" height="24px">
     <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
         <g transform="translate(-768.000000, -1248.000000)" fill="#FFF">
@@ -449,7 +480,7 @@ module.exports.getRadarSvg = function(){
     </svg>`;
 }
 
-module.exports.getNukeSvg = function(){
+module.exports.getNukeSvg = function() {
     return `
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
     <symbol id="sc-svg-nuke" height="32px" viewBox="0 0 900 900" width="32px">
@@ -475,24 +506,24 @@ module.exports.getNukeSvg = function(){
 
 module.exports.badges = {}
 
-module.exports.getBadge = function(playerName, width, height, cb){
-    if (module.exports.badges[playerName]){
+module.exports.getBadge = function(playerName, width, height, cb) {
+    if (module.exports.badges[playerName]) {
 
-        module.exports.getBadgeImage(module.exports.badges[playerName], width, height, function(image){
+        module.exports.getBadgeImage(module.exports.badges[playerName], width, height, function(image) {
             cb(image);
         });
-    }else{
-        module.ajaxGet(`https://screeps.com/api/user/find?username=${playerName}`, function(result, err){
-            if (err || !result){
+    } else {
+        module.ajaxGet(`https://screeps.com/api/user/find?username=${playerName}`, function(result, err) {
+            if (err || !result) {
                 console.error(err);
                 cb(null, err);
-            }else{
+            } else {
                 module.exports.badges[playerName] = result.user.badge;
 
-                module.exports.getBadgeImage(result.user.badge, width, height, function(image){
+                module.exports.getBadgeImage(result.user.badge, width, height, function(image) {
                     cb(image);
                 });
-            }            
+            }
         });
     }
 }
@@ -505,9 +536,9 @@ module.exports.getBadgeImage = function(badge, width, height, cb) {
     var canvas = document.createElement("canvas");
     var ctx = canvas.getContext("2d");
     var image = new Image();
-    var blob = new Blob([svg],{
-                    type: "image/svg+xml"
-                });
+    var blob = new Blob([svg], {
+        type: "image/svg+xml"
+    });
 
     // Todo find proper way to revoke recurring images using onload
     domURL.revokeObjectURL(url);
@@ -522,14 +553,14 @@ module.exports.getBadgeImage = function(badge, width, height, cb) {
 }
 
 /* taken from @screeps build */
-module.exports.getBadgeSvg = function(badge, width, height){
-    var m = []
-      , n = 0;
+module.exports.getBadgeSvg = function(badge, width, height) {
+    var m = [],
+        n = 0;
     m.push({
         index: n++,
         rgb: "#" + module.exports.dataToRgb(0, 0, .8)
     });
-    for (var o = 0; 19 > o; o++){
+    for (var o = 0; 19 > o; o++) {
         m.push({
             index: n++,
             rgb: "#" + module.exports.dataToRgb(360 * o / 19, .6, .8)
@@ -539,7 +570,7 @@ module.exports.getBadgeSvg = function(badge, width, height){
         index: n++,
         rgb: "#" + module.exports.dataToRgb(0, 0, .5)
     });
-    for (var o = 0; 19 > o; o++){
+    for (var o = 0; 19 > o; o++) {
         m.push({
             index: n++,
             rgb: "#" + module.exports.dataToRgb(360 * o / 19, .7, .5)
@@ -549,7 +580,7 @@ module.exports.getBadgeSvg = function(badge, width, height){
         index: n++,
         rgb: "#" + module.exports.dataToRgb(0, 0, .3)
     });
-    for (var o = 0; 19 > o; o++){
+    for (var o = 0; 19 > o; o++) {
         m.push({
             index: n++,
             rgb: "#" + module.exports.dataToRgb(360 * o / 19, .4, .3)
@@ -559,7 +590,7 @@ module.exports.getBadgeSvg = function(badge, width, height){
         index: n++,
         rgb: "#" + module.exports.dataToRgb(0, 0, .1)
     });
-    for (var o = 0; 19 > o; o++){
+    for (var o = 0; 19 > o; o++) {
         m.push({
             index: n++,
             rgb: "#" + module.exports.dataToRgb(360 * o / 19, .5, .1)
@@ -576,26 +607,26 @@ module.exports.getBadgeSvg = function(badge, width, height){
     width = Math.round(width);
     height = Math.round(height);
 
-    if (badge.param > 100){
+    if (badge.param > 100) {
         badge.param = 100
-    }else if (badge.param < -100){
+    } else if (badge.param < -100) {
         badge.param = -100
     }
 
     canvas.width = width
     canvas.height = height
 
-    if (_.isNumber(badge.type)){
+    if (_.isNumber(badge.type)) {
         paths[badge.type].calc(badge.param);
     }
 
     var rotate = 0;
-    if (badge.flip){
-        if ("rotate180" == paths[badge.type].flip){
+    if (badge.flip) {
+        if ("rotate180" == paths[badge.type].flip) {
             rotate = 180
-        }else if ("rotate90" == paths[badge.type].flip){
+        } else if ("rotate90" == paths[badge.type].flip) {
             rotate = 90
-        }else if ("rotate45" == paths[badge.type].flip){
+        } else if ("rotate45" == paths[badge.type].flip) {
             rotate = 45
         }
     }
@@ -609,30 +640,30 @@ module.exports.getBadgeSvg = function(badge, width, height){
                         </defs>
                     <g transform="rotate(${rotate} 50 50)">
                     <rect x="0" y="0" width="100" height="100" fill="${color1}" clip-path="url(#clip)"/>`;
-    
+
     var path1;
     var path2;
 
-    if (_.isNumber(badge.type)){
+    if (_.isNumber(badge.type)) {
         path1 = paths[badge.type].path1;
         path2 = paths[badge.type].path2;
-    }else{
+    } else {
         path1 = badge.type.path1;
         path2 = badge.type.path2;
     }
 
-    if (path1){
+    if (path1) {
         svgHtml += '<path d="' + path1 + '" fill="' + color2 + '" clip-path="url(#clip)"/>'
     }
-    
-    if (path2){
+
+    if (path2) {
         svgHtml += '<path d="' + path2 + '" fill="' + color3 + '" clip-path="url(#clip)"/>'
     }
 
     svgHtml += "</g></svg>";
 
     return svgHtml;
-    
+
 }
 
 /* taken from @screeps build */
@@ -640,94 +671,96 @@ module.exports.dataToRgb = function b(a, b, c) {
     function d(a) {
         var b = Number(a).toString(16);
         return b.length < 2 && (b = "0" + b),
-        b
+            b
     }
-    var e, f, g, h = (1 - Math.abs(2 * c - 1)) * b, i = a / 60, j = h * (1 - Math.abs(i % 2 - 1));
+    var e, f, g, h = (1 - Math.abs(2 * c - 1)) * b,
+        i = a / 60,
+        j = h * (1 - Math.abs(i % 2 - 1));
     void 0 === a || isNaN(a) || null === a ? e = f = g = 0 : i >= 0 && 1 > i ? (e = h,
-    f = j,
-    g = 0) : i >= 1 && 2 > i ? (e = j,
-    f = h,
-    g = 0) : i >= 2 && 3 > i ? (e = 0,
-    f = h,
-    g = j) : i >= 3 && 4 > i ? (e = 0,
-    f = j,
-    g = h) : i >= 4 && 5 > i ? (e = j,
-    f = 0,
-    g = h) : i >= 5 && 6 > i && (e = h,
-    f = 0,
-    g = j);
+        f = j,
+        g = 0) : i >= 1 && 2 > i ? (e = j,
+        f = h,
+        g = 0) : i >= 2 && 3 > i ? (e = 0,
+        f = h,
+        g = j) : i >= 3 && 4 > i ? (e = 0,
+        f = j,
+        g = h) : i >= 4 && 5 > i ? (e = j,
+        f = 0,
+        g = h) : i >= 5 && 6 > i && (e = h,
+        f = 0,
+        g = j);
     var k, l, m, n = c - h / 2;
     return k = 255 * (e + n),
-    l = 255 * (f + n),
-    m = 255 * (g + n),
-    k = Math.round(k),
-    l = Math.round(l),
-    m = Math.round(m),
-    d(k) + d(l) + d(m)
+        l = 255 * (f + n),
+        m = 255 * (g + n),
+        k = Math.round(k),
+        l = Math.round(l),
+        m = Math.round(m),
+        d(k) + d(l) + d(m)
 }
 
 /* taken from @screeps build */
-module.exports.getBadgePaths = function(){
-return {
+module.exports.getBadgePaths = function() {
+    return {
         1: {
             calc: function(a) {
-                var b = 0
-                  , c = 0;
+                var b = 0,
+                    c = 0;
                 a > 0 && (b = 30 * a / 100),
-                0 > a && (c = 30 * -a / 100),
-                this.path1 = "M 50 " + (100 - b) + " L " + c + " 50 H " + (100 - c) + " Z",
-                this.path2 = "M " + c + " 50 H " + (100 - c) + " L 50 " + b + " Z"
+                    0 > a && (c = 30 * -a / 100),
+                    this.path1 = "M 50 " + (100 - b) + " L " + c + " 50 H " + (100 - c) + " Z",
+                    this.path2 = "M " + c + " 50 H " + (100 - c) + " L 50 " + b + " Z"
             }
         },
         2: {
             calc: function(a) {
-                var b = 0
-                  , c = 0;
+                var b = 0,
+                    c = 0;
                 a > 0 && (b = 30 * a / 100),
-                0 > a && (c = 30 * -a / 100),
-                this.path1 = "M " + b + " " + c + " L 50 50 L " + (100 - b) + " " + c + " V -1 H -1 Z",
-                this.path2 = "M " + b + " " + (100 - c) + " L 50 50 L " + (100 - b) + " " + (100 - c) + " V 101 H -1 Z"
+                    0 > a && (c = 30 * -a / 100),
+                    this.path1 = "M " + b + " " + c + " L 50 50 L " + (100 - b) + " " + c + " V -1 H -1 Z",
+                    this.path2 = "M " + b + " " + (100 - c) + " L 50 50 L " + (100 - b) + " " + (100 - c) + " V 101 H -1 Z"
             }
         },
         3: {
             calc: function(a) {
-                var b = Math.PI / 4 + Math.PI / 4 * (a + 100) / 200
-                  , c = -Math.PI / 2
-                  , d = Math.PI / 2 + Math.PI / 3
-                  , e = Math.PI / 2 - Math.PI / 3;
+                var b = Math.PI / 4 + Math.PI / 4 * (a + 100) / 200,
+                    c = -Math.PI / 2,
+                    d = Math.PI / 2 + Math.PI / 3,
+                    e = Math.PI / 2 - Math.PI / 3;
                 this.path1 = "M 50 50 L " + (50 + 100 * Math.cos(c - b / 2)) + " " + (50 + 100 * Math.sin(c - b / 2)) + " L " + (50 + 100 * Math.cos(c + b / 2)) + " " + (50 + 100 * Math.sin(c + b / 2)) + " Z",
-                this.path2 = "M 50 50 L " + (50 + 100 * Math.cos(d - b / 2)) + " " + (50 + 100 * Math.sin(d - b / 2)) + " L " + (50 + 100 * Math.cos(d + b / 2)) + " " + (50 + 100 * Math.sin(d + b / 2)) + " Z\n                          M 50 50 L " + (50 + 100 * Math.cos(e - b / 2)) + " " + (50 + 100 * Math.sin(e - b / 2)) + " L " + (50 + 100 * Math.cos(e + b / 2)) + " " + (50 + 100 * Math.sin(e + b / 2))
+                    this.path2 = "M 50 50 L " + (50 + 100 * Math.cos(d - b / 2)) + " " + (50 + 100 * Math.sin(d - b / 2)) + " L " + (50 + 100 * Math.cos(d + b / 2)) + " " + (50 + 100 * Math.sin(d + b / 2)) + " Z\n                          M 50 50 L " + (50 + 100 * Math.cos(e - b / 2)) + " " + (50 + 100 * Math.sin(e - b / 2)) + " L " + (50 + 100 * Math.cos(e + b / 2)) + " " + (50 + 100 * Math.sin(e + b / 2))
             },
             flip: "rotate180"
         },
         4: {
             calc: function(a) {
                 a += 100;
-                var b = 50 - 30 * a / 200
-                  , c = 50 + 30 * a / 200;
+                var b = 50 - 30 * a / 200,
+                    c = 50 + 30 * a / 200;
                 this.path1 = "M 0 " + c + " H 100 V 100 H 0 Z",
-                this.path2 = a > 0 ? "M 0 " + b + " H 100 V " + c + " H 0 Z" : ""
+                    this.path2 = a > 0 ? "M 0 " + b + " H 100 V " + c + " H 0 Z" : ""
             },
             flip: "rotate90"
         },
         5: {
             calc: function(a) {
                 a += 100;
-                var b = 50 - 10 * a / 200 - 10
-                  , c = 50 + 10 * a / 200 + 10;
+                var b = 50 - 10 * a / 200 - 10,
+                    c = 50 + 10 * a / 200 + 10;
                 this.path1 = "M " + b + " 0 H " + c + " V 100 H " + b + " Z",
-                this.path2 = "M 0 " + b + " H 100 V " + c + " H 0 Z"
+                    this.path2 = "M 0 " + b + " H 100 V " + c + " H 0 Z"
             },
             flip: "rotate45"
         },
         6: {
             calc: function(a) {
-                var b = 5 + 8 * (a + 100) / 200
-                  , c = 50
-                  , d = 20
-                  , e = 80;
+                var b = 5 + 8 * (a + 100) / 200,
+                    c = 50,
+                    d = 20,
+                    e = 80;
                 this.path1 = "M " + (c - b) + " 0 H " + (c + b) + " V 100 H " + (c - b),
-                this.path2 = "M " + (d - b) + " 0 H " + (d + b) + " V 100 H " + (d - b) + " Z\n                          M " + (e - b) + " 0 H " + (e + b) + " V 100 H " + (e - b) + " Z"
+                    this.path2 = "M " + (d - b) + " 0 H " + (d + b) + " V 100 H " + (d - b) + " Z\n                          M " + (e - b) + " 0 H " + (e + b) + " V 100 H " + (e - b) + " Z"
             },
             flip: "rotate90"
         },
@@ -735,7 +768,7 @@ return {
             calc: function(a) {
                 var b = 20 + 10 * a / 100;
                 this.path1 = "M 0 50 Q 25 30 50 50 T 100 50 V 100 H 0 Z",
-                this.path2 = "M 0 " + (50 - b) + " Q 25 " + (30 - b) + " 50 " + (50 - b) + " T 100 " + (50 - b) + "\n                            V " + (50 + b) + " Q 75 " + (70 + b) + " 50 " + (50 + b) + " T 0 " + (50 + b) + " Z"
+                    this.path2 = "M 0 " + (50 - b) + " Q 25 " + (30 - b) + " 50 " + (50 - b) + " T 100 " + (50 - b) + "\n                            V " + (50 + b) + " Q 75 " + (70 + b) + " 50 " + (50 + b) + " T 0 " + (50 + b) + " Z"
             },
             flip: "rotate90"
         },
@@ -743,132 +776,132 @@ return {
             calc: function(a) {
                 var b = 20 * a / 100;
                 this.path1 = "M 0 50 H 100 V 100 H 0 Z",
-                this.path2 = "M 0 50 Q 50 " + b + " 100 50 Q 50 " + (100 - b) + " 0 50 Z"
+                    this.path2 = "M 0 50 Q 50 " + b + " 100 50 Q 50 " + (100 - b) + " 0 50 Z"
             },
             flip: "rotate90"
         },
         9: {
             calc: function(a) {
-                var b = 0
-                  , c = 50
-                  , d = 70;
+                var b = 0,
+                    c = 50,
+                    d = 70;
                 a > 0 && (b += a / 100 * 20),
-                0 > a && (c += a / 100 * 30),
-                this.path1 = "M 50 " + b + " L 100 " + (b + d) + " V 101 H 0 V " + (b + d) + " Z",
-                this.path2 = "M 50 " + (b + c) + " L 100 " + (b + c + d) + " V 101 H 0 V " + (b + c + d) + " Z"
+                    0 > a && (c += a / 100 * 30),
+                    this.path1 = "M 50 " + b + " L 100 " + (b + d) + " V 101 H 0 V " + (b + d) + " Z",
+                    this.path2 = "M 50 " + (b + c) + " L 100 " + (b + c + d) + " V 101 H 0 V " + (b + c + d) + " Z"
             },
             flip: "rotate180"
         },
         10: {
             calc: function(a) {
-                var b = 30
-                  , c = 7;
+                var b = 30,
+                    c = 7;
                 a > 0 && (b += 50 * a / 100),
-                0 > a && (c -= 20 * a / 100),
-                this.path1 = "M " + (50 + c + b) + " " + (50 - b) + " A " + b + " " + b + " 0 0 0 " + (50 + c + b) + " " + (50 + b) + " H 101 V " + (50 - b) + " Z",
-                this.path2 = "M " + (50 - c - b) + " " + (50 - b) + " A " + b + " " + b + " 0 0 1 " + (50 - c - b) + " " + (50 + b) + " H -1 V " + (50 - b) + " Z"
+                    0 > a && (c -= 20 * a / 100),
+                    this.path1 = "M " + (50 + c + b) + " " + (50 - b) + " A " + b + " " + b + " 0 0 0 " + (50 + c + b) + " " + (50 + b) + " H 101 V " + (50 - b) + " Z",
+                    this.path2 = "M " + (50 - c - b) + " " + (50 - b) + " A " + b + " " + b + " 0 0 1 " + (50 - c - b) + " " + (50 + b) + " H -1 V " + (50 - b) + " Z"
             },
             flip: "rotate90"
         },
         11: {
             calc: function(a) {
-                var b = 30
-                  , c = 30
-                  , d = 50 - 50 * Math.cos(Math.PI / 4)
-                  , e = 50 - 50 * Math.sin(Math.PI / 4);
+                var b = 30,
+                    c = 30,
+                    d = 50 - 50 * Math.cos(Math.PI / 4),
+                    e = 50 - 50 * Math.sin(Math.PI / 4);
                 a > 0 && (b += 25 * a / 100,
-                c += 25 * a / 100),
-                0 > a && (c -= 50 * a / 100),
-                this.path1 = "M " + d + " " + e + " Q " + b + " 50 " + d + " " + (100 - e) + " H 0 V " + e + " Z\n                          M " + (100 - d) + " " + e + " Q " + (100 - b) + " 50 " + (100 - d) + " " + (100 - e) + " H 100 V " + e + " Z",
-                this.path2 = "M " + d + " " + e + " Q 50 " + c + " " + (100 - d) + " " + e + " V 0 H " + d + " Z\n                          M " + d + " " + (100 - e) + " Q 50 " + (100 - c) + " " + (100 - d) + " " + (100 - e) + " V 100 H " + d + " Z"
+                        c += 25 * a / 100),
+                    0 > a && (c -= 50 * a / 100),
+                    this.path1 = "M " + d + " " + e + " Q " + b + " 50 " + d + " " + (100 - e) + " H 0 V " + e + " Z\n                          M " + (100 - d) + " " + e + " Q " + (100 - b) + " 50 " + (100 - d) + " " + (100 - e) + " H 100 V " + e + " Z",
+                    this.path2 = "M " + d + " " + e + " Q 50 " + c + " " + (100 - d) + " " + e + " V 0 H " + d + " Z\n                          M " + d + " " + (100 - e) + " Q 50 " + (100 - c) + " " + (100 - d) + " " + (100 - e) + " V 100 H " + d + " Z"
             },
             flip: "rotate90"
         },
         12: {
             calc: function(a) {
-                var b = 30
-                  , c = 35;
+                var b = 30,
+                    c = 35;
                 a > 0 && (b += 30 * a / 100),
-                0 > a && (c += 15 * a / 100),
-                this.path1 = "M 0 " + b + " H 100 V 100 H 0 Z",
-                this.path2 = "M 0 " + b + " H " + c + " V 100 H 0 Z\n                          M 100 " + b + " H " + (100 - c) + " V 100 H 100 Z"
+                    0 > a && (c += 15 * a / 100),
+                    this.path1 = "M 0 " + b + " H 100 V 100 H 0 Z",
+                    this.path2 = "M 0 " + b + " H " + c + " V 100 H 0 Z\n                          M 100 " + b + " H " + (100 - c) + " V 100 H 100 Z"
             },
             flip: "rotate180"
         },
         13: {
             calc: function(a) {
-                var b = 30
-                  , c = 0;
+                var b = 30,
+                    c = 0;
                 a > 0 && (b += 50 * a / 100),
-                0 > a && (c -= 20 * a / 100),
-                this.path1 = "M 0 0 H 50 V 100 H 0 Z",
-                this.path2 = "M " + (50 - b) + " " + (50 - c - b) + " A " + b + " " + b + " 0 0 0 " + (50 + b) + " " + (50 - b - c) + " V 0 H " + (50 - b) + " Z"
+                    0 > a && (c -= 20 * a / 100),
+                    this.path1 = "M 0 0 H 50 V 100 H 0 Z",
+                    this.path2 = "M " + (50 - b) + " " + (50 - c - b) + " A " + b + " " + b + " 0 0 0 " + (50 + b) + " " + (50 - b - c) + " V 0 H " + (50 - b) + " Z"
             },
             flip: "rotate180"
         },
         14: {
             calc: function(a) {
-                var b = Math.PI / 4
-                  , c = 0;
+                var b = Math.PI / 4,
+                    c = 0;
                 b += a * Math.PI / 4 / 100,
-                this.path1 = "M 50 0 Q 50 " + (50 + c) + " " + (50 + 50 * Math.cos(b)) + " " + (50 + 50 * Math.sin(b)) + " H 100 V 0 H 50 Z",
-                this.path2 = "M 50 0 Q 50 " + (50 + c) + " " + (50 - 50 * Math.cos(b)) + " " + (50 + 50 * Math.sin(b)) + " H 0 V 0 H 50 Z"
+                    this.path1 = "M 50 0 Q 50 " + (50 + c) + " " + (50 + 50 * Math.cos(b)) + " " + (50 + 50 * Math.sin(b)) + " H 100 V 0 H 50 Z",
+                    this.path2 = "M 50 0 Q 50 " + (50 + c) + " " + (50 - 50 * Math.cos(b)) + " " + (50 + 50 * Math.sin(b)) + " H 0 V 0 H 50 Z"
             },
             flip: "rotate180"
         },
         15: {
             calc: function(a) {
-                var b = 13 + 6 * a / 100
-                  , c = 80
-                  , d = 45
-                  , e = 10;
+                var b = 13 + 6 * a / 100,
+                    c = 80,
+                    d = 45,
+                    e = 10;
                 this.path1 = "M " + (50 - c - b) + " " + (100 + e) + " A " + (c + b) + " " + (c + b) + " 0 0 1 " + (50 + c + b) + " " + (100 + e) + "\n                                   H " + (50 + c - b) + " A " + (c - b) + " " + (c - b) + " 0 1 0 " + (50 - c + b) + " " + (100 + e),
-                this.path2 = "M " + (50 - d - b) + " " + (100 + e) + " A " + (d + b) + " " + (d + b) + " 0 0 1 " + (50 + d + b) + " " + (100 + e) + "\n                                   H " + (50 + d - b) + " A " + (d - b) + " " + (d - b) + " 0 1 0 " + (50 - d + b) + " " + (100 + e)
+                    this.path2 = "M " + (50 - d - b) + " " + (100 + e) + " A " + (d + b) + " " + (d + b) + " 0 0 1 " + (50 + d + b) + " " + (100 + e) + "\n                                   H " + (50 + d - b) + " A " + (d - b) + " " + (d - b) + " 0 1 0 " + (50 - d + b) + " " + (100 + e)
             },
             flip: "rotate180"
         },
         16: {
             calc: function(a) {
-                var b = 30 * Math.PI / 180
-                  , c = 25;
+                var b = 30 * Math.PI / 180,
+                    c = 25;
                 a > 0 && (b += 30 * Math.PI / 180 * a / 100),
-                0 > a && (c += 25 * a / 100),
-                this.path1 = "";
+                    0 > a && (c += 25 * a / 100),
+                    this.path1 = "";
                 for (var d = 0; 3 > d; d++) {
-                    var e = d * Math.PI * 2 / 3 + b / 2 - Math.PI / 2
-                      , f = d * Math.PI * 2 / 3 - b / 2 - Math.PI / 2;
+                    var e = d * Math.PI * 2 / 3 + b / 2 - Math.PI / 2,
+                        f = d * Math.PI * 2 / 3 - b / 2 - Math.PI / 2;
                     this.path1 += "M " + (50 + 100 * Math.cos(e)) + " " + (50 + 100 * Math.sin(e)) + "\n                               L " + (50 + 100 * Math.cos(f)) + " " + (50 + 100 * Math.sin(f)) + "\n                               L " + (50 + c * Math.cos(f)) + " " + (50 + c * Math.sin(f)) + "\n                               A " + c + " " + c + " 0 0 1 " + (50 + c * Math.cos(e)) + " " + (50 + c * Math.sin(e)) + " Z"
                 }
                 this.path2 = "";
                 for (var d = 0; 3 > d; d++) {
-                    var e = d * Math.PI * 2 / 3 + b / 2 + Math.PI / 2
-                      , f = d * Math.PI * 2 / 3 - b / 2 + Math.PI / 2;
+                    var e = d * Math.PI * 2 / 3 + b / 2 + Math.PI / 2,
+                        f = d * Math.PI * 2 / 3 - b / 2 + Math.PI / 2;
                     this.path2 += "M " + (50 + 100 * Math.cos(e)) + " " + (50 + 100 * Math.sin(e)) + "\n                               L " + (50 + 100 * Math.cos(f)) + " " + (50 + 100 * Math.sin(f)) + "\n                               L " + (50 + c * Math.cos(f)) + " " + (50 + c * Math.sin(f)) + "\n                               A " + c + " " + c + " 0 0 1 " + (50 + c * Math.cos(e)) + " " + (50 + c * Math.sin(e)) + " Z"
                 }
             }
         },
         17: {
             calc: function(a) {
-                var b = 35
-                  , c = 45;
+                var b = 35,
+                    c = 45;
                 a > 0 && (b += 20 * a / 100),
-                0 > a && (c -= 30 * a / 100),
-                this.path1 = "M 50 45 L " + (50 - b) + " " + (c + 45) + " H " + (50 + b) + " Z",
-                this.path2 = "M 50 0 L " + (50 - b) + " " + c + " H " + (50 + b) + " Z"
+                    0 > a && (c -= 30 * a / 100),
+                    this.path1 = "M 50 45 L " + (50 - b) + " " + (c + 45) + " H " + (50 + b) + " Z",
+                    this.path2 = "M 50 0 L " + (50 - b) + " " + c + " H " + (50 + b) + " Z"
             }
         },
         18: {
             calc: function(a) {
-                var b = 90 * Math.PI / 180
-                  , c = 10;
+                var b = 90 * Math.PI / 180,
+                    c = 10;
                 a > 0 && (b -= 60 / 180 * Math.PI * a / 100),
-                0 > a && (c -= 15 * a / 100),
-                this.path1 = "",
-                this.path2 = "";
+                    0 > a && (c -= 15 * a / 100),
+                    this.path1 = "",
+                    this.path2 = "";
                 for (var d = 0; 3 > d; d++) {
-                    var e = 2 * Math.PI / 3 * d + b / 2 - Math.PI / 2
-                      , f = 2 * Math.PI / 3 * d - b / 2 - Math.PI / 2
-                      , g = "M " + (50 + 100 * Math.cos(e)) + " " + (50 + 100 * Math.sin(e)) + "\n                            L " + (50 + 100 * Math.cos(f)) + " " + (50 + 100 * Math.sin(f)) + "\n                            L " + (50 + c * Math.cos((e + f) / 2)) + " " + (50 + c * Math.sin((e + f) / 2)) + " Z";
+                    var e = 2 * Math.PI / 3 * d + b / 2 - Math.PI / 2,
+                        f = 2 * Math.PI / 3 * d - b / 2 - Math.PI / 2,
+                        g = "M " + (50 + 100 * Math.cos(e)) + " " + (50 + 100 * Math.sin(e)) + "\n                            L " + (50 + 100 * Math.cos(f)) + " " + (50 + 100 * Math.sin(f)) + "\n                            L " + (50 + c * Math.cos((e + f) / 2)) + " " + (50 + c * Math.sin((e + f) / 2)) + " Z";
                     d ? this.path2 += g : this.path1 += g
                 }
             },
@@ -876,35 +909,35 @@ return {
         },
         19: {
             calc: function(a) {
-                var b = 20
-                  , c = 60;
+                var b = 20,
+                    c = 60;
                 c += 20 * a / 100,
-                b += 20 * a / 100,
-                this.path1 = "M 50 -10 L " + (50 - c) + " 100 H " + (50 + c) + " Z",
-                this.path2 = "",
-                b > 0 && (this.path2 = "M 50 0 L " + (50 - b) + " 100 H " + (50 + b) + " Z")
+                    b += 20 * a / 100,
+                    this.path1 = "M 50 -10 L " + (50 - c) + " 100 H " + (50 + c) + " Z",
+                    this.path2 = "",
+                    b > 0 && (this.path2 = "M 50 0 L " + (50 - b) + " 100 H " + (50 + b) + " Z")
             },
             flip: "rotate180"
         },
         20: {
             calc: function(a) {
-                var b = 10
-                  , c = 20;
+                var b = 10,
+                    c = 20;
                 a > 0 && (b += 20 * a / 100),
-                0 > a && (c += 40 * a / 100),
-                this.path1 = "M 0 " + (50 - c) + " H " + (50 - b) + " V 100 H 0 Z",
-                this.path2 = "M " + (50 + b) + " 0 V " + (50 + c) + " H 100 V 0 Z"
+                    0 > a && (c += 40 * a / 100),
+                    this.path1 = "M 0 " + (50 - c) + " H " + (50 - b) + " V 100 H 0 Z",
+                    this.path2 = "M " + (50 + b) + " 0 V " + (50 + c) + " H 100 V 0 Z"
             },
             flip: "rotate90"
         },
         21: {
             calc: function(a) {
-                var b = 40
-                  , c = 50;
+                var b = 40,
+                    c = 50;
                 a > 0 && (b -= 20 * a / 100),
-                0 > a && (c += 20 * a / 100),
-                this.path1 = "M 50 " + c + " Q " + (50 + b) + " 0 50 0 T 50 " + c + " Z\n                          M 50 " + (100 - c) + " Q " + (50 + b) + " 100 50 100 T 50 " + (100 - c) + " Z",
-                this.path2 = "M " + c + " 50 Q 0 " + (50 + b) + " 0 50 T " + c + " 50 Z\n                          M " + (100 - c) + " 50 Q 100 " + (50 + b) + " 100 50 T " + (100 - c) + " 50 Z"
+                    0 > a && (c += 20 * a / 100),
+                    this.path1 = "M 50 " + c + " Q " + (50 + b) + " 0 50 0 T 50 " + c + " Z\n                          M 50 " + (100 - c) + " Q " + (50 + b) + " 100 50 100 T 50 " + (100 - c) + " Z",
+                    this.path2 = "M " + c + " 50 Q 0 " + (50 + b) + " 0 50 T " + c + " 50 Z\n                          M " + (100 - c) + " 50 Q 100 " + (50 + b) + " 100 50 T " + (100 - c) + " 50 Z"
             },
             flip: "rotate45"
         },
@@ -912,8 +945,8 @@ return {
             calc: function(a) {
                 var b = 20;
                 b += 10 * a / 100,
-                this.path1 = "M " + (50 - b) + " " + (50 - b) + " H " + (50 + b) + " V " + (50 + b) + " H " + (50 - b) + " Z",
-                this.path2 = "";
+                    this.path1 = "M " + (50 - b) + " " + (50 - b) + " H " + (50 + b) + " V " + (50 + b) + " H " + (50 - b) + " Z",
+                    this.path2 = "";
                 for (var c = -4; 4 > c; c++)
                     for (var d = -4; 4 > d; d++) {
                         var e = (c + d) % 2;
@@ -924,11 +957,11 @@ return {
         },
         23: {
             calc: function(a) {
-                var b = 17
-                  , c = 25;
+                var b = 17,
+                    c = 25;
                 a > 0 && (b += 35 * a / 100),
-                0 > a && (c -= 23 * a / 100),
-                this.path1 = "";
+                    0 > a && (c -= 23 * a / 100),
+                    this.path1 = "";
                 for (var d = -4; 4 >= d; d++)
                     this.path1 += "M " + (50 - b * d * 2) + " " + (50 - c) + " l " + -b + " " + -c + " l " + -b + " " + c + " l " + b + " " + c + " Z";
                 this.path2 = "";
@@ -939,15 +972,14 @@ return {
         },
         24: {
             calc: function(a) {
-                var b = 50
-                  , c = 45;
+                var b = 50,
+                    c = 45;
                 a > 0 && (b += 60 * a / 100),
-                0 > a && (c += 30 * a / 100),
-                this.path1 = "M 0 " + c + " L 50 70 L 100 " + c + " V 100 H 0 Z",
-                this.path2 = "M 50 0 L " + (50 + b) + " 100 H 100 V " + c + " L 50 70 L 0 " + c + " V 100 H " + (50 - b) + " Z"
+                    0 > a && (c += 30 * a / 100),
+                    this.path1 = "M 0 " + c + " L 50 70 L 100 " + c + " V 100 H 0 Z",
+                    this.path2 = "M 50 0 L " + (50 + b) + " 100 H 100 V " + c + " L 50 70 L 0 " + c + " V 100 H " + (50 - b) + " Z"
             },
             flip: "rotate180"
         }
     }
 }
-
