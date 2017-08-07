@@ -70,7 +70,7 @@ module.exports.openModal = function() {
         <div class="modal-dialog" style="width:900px">
             <div class="modal-content" modal-window-content="">
                 <section class="dlg-flag">
-                    <div class="modal-body" style="max-height:500px;overflow-y:scroll;">
+                    <div class="modal-body">
 
                         <div class="panel battle-radar" style="background-color:inherit">
                             <button class="md-button md-ink-ripple" type="button" style="position: absolute;right: 20px;">
@@ -88,7 +88,7 @@ module.exports.openModal = function() {
                                 <li><a href="javascript:void(0)">Current PvP</a></li>
                               </ul>     
                             </div>
-                            <div class="panel-body">
+                            <div class="panel-body" style="overflow:scroll; height:500px;">
                               <div class="tab-content">
                                 <div class="tab-pane active">
 
@@ -335,7 +335,6 @@ module.exports.displayPvPTab = function(gameTime, shard) {
             $('#sc-tbody-battle-radar-pvp').append("<div style='position: absolute;right: 50%;font-size: 16px;padding-top: 10px;''> The world is at peace.</div>");
         } else {
             data.pvp[shard].rooms.forEach(function(roomInfo) {
-
                 var defenderName = "Unknown";
                 var attackerName = "Unknown";
 
@@ -387,8 +386,8 @@ module.exports.displayPvPTab = function(gameTime, shard) {
 
                     $('#sc-tbody-battle-radar-pvp').append(row);
                 });
-
             });
+
         }
     });
 }
