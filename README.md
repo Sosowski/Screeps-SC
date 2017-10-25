@@ -1,3 +1,5 @@
+>This fork adds some convenience changes to the market page, including labeling what each boost does, and marking market transactions as NPC transactions.
+
 # <img src="https://raw.githubusercontent.com/stybbe/Screeps-SC/master/icons/icon48.png" width="24"> Screeps-SC 
 Modular chrome extension for the game [screeps.com](https://screeps.com/).
 
