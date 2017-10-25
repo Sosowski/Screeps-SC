@@ -1,45 +1,45 @@
-module.exports.init = function(){
-    module.exports.base = ['energy','power','H','O','U','L','K','Z','X'];
-    module.exports.tier1 = ['OH','ZK','UL','G','UH','UO','KH','KO','LH','LO','ZH','ZO','GH','GO'];
-    module.exports.tier2 = ['UH2O','UHO2','KH2O','KHO2','LH2O','LHO2','ZH2O','ZHO2','GH2O','GHO2'];
-    module.exports.tier3 = ['XUH2O','XUHO2','XKH2O','XKHO2','XLH2O','XLHO2','XZH2O','XZHO2','XGH2O','XGHO2'];
+module.exports.init = function() {
+    module.exports.base = ['energy', 'power', 'H', 'O', 'U', 'L', 'K', 'Z', 'X'];
+    module.exports.tier1 = ['OH', 'ZK', 'UL', 'G', 'UH', 'UO', 'KH', 'KO', 'LH', 'LO', 'ZH', 'ZO', 'GH', 'GO'];
+    module.exports.tier2 = ['UH2O', 'UHO2', 'KH2O', 'KHO2', 'LH2O', 'LHO2', 'ZH2O', 'ZHO2', 'GH2O', 'GHO2'];
+    module.exports.tier3 = ['XUH2O', 'XUHO2', 'XKH2O', 'XKHO2', 'XLH2O', 'XLHO2', 'XZH2O', 'XZHO2', 'XGH2O', 'XGHO2'];
 
     var userid = JSON.parse(localStorage.getItem('users.code.activeWorld'))[0]._id;
 
-    module.ajaxGet("https://screeps.com/api/user/rooms?id=" + userid, function(data, error){
-        if (data && data.shards){
+    module.ajaxGet("https://screeps.com/api/user/rooms?id=" + userid, function(data, error) {
+        if (data && data.shards) {
             module.exports.shards = data.shards;
-        }else{
+        } else {
             module.exports.shards = {};
             module.exports.shards.shards = {};
             console.error(data || error);
         }
 
-        $('body').on('click', `.market-controls > button`, function () {
+        $('body').on('click', `.market-controls > button`, function() {
             module.exports.fetchResources();
         });
 
         module.exports.update();
-    });    
+    });
 }
 
-module.exports.update = function(){
-    if (window.location.href.startsWith("https://screeps.com/a/#!/market/all/")){
-        module.getScopeData("market-all-orders", "AllOrders", [], function(AllOrders){
+module.exports.update = function() {
+    if (window.location.href.startsWith("https://screeps.com/a/#!/market/all/")) {
+        module.getScopeData("market-all-orders", "AllOrders", [], function(AllOrders) {
             var orgFunc = AllOrders.onShardChange;
-            AllOrders.onShardChange = function(){
+            AllOrders.onShardChange = function() {
                 module.exports.fetchResources();
                 orgFunc();
             }
         });
     }
-    module.getScopeData("market", "$parent", [], function(){
+    module.getScopeData("market", "$parent", [], function() {
 
-        if (!document.getElementById('sc-my-resources')){
+        if (!document.getElementById('sc-my-resources')) {
             var svg = module.exports.getLoadingSVG();
 
-            var bodyElement = 
-            $(`<div id="sc-my-resources" style="padding:30px 0 10px 30px;"><div style="font-size: 15px;">My resources:</div>
+            var bodyElement =
+                $(`<div id="sc-my-resources" style="padding:30px 0 10px 30px;"><div style="font-size: 15px;">My resources:</div>
                 <select id="sc-dropdown" style="border-color: transparent;background: #444;color: #ccc;">
                   <option value="None">None</option>
                   <option value="Storage & Terminal" selected>Storage & Terminal</option>
@@ -68,30 +68,30 @@ module.exports.update = function(){
                 </div>
             </div>
             </div>`);
-            
+
             var savedDrop = localStorage.getItem('scMarketDropdown');
-            if (savedDrop){
+            if (savedDrop) {
                 var dropdownElement = bodyElement.find('#sc-dropdown');
                 dropdownElement.val(savedDrop);
 
-                if (savedDrop == "None"){
+                if (savedDrop == "None") {
                     bodyElement.find('#container4').hide();
                 }
             }
-            
-            for(let i = 0; i < module.exports.base.length; i++){
+
+            for (let i = 0; i < module.exports.base.length; i++) {
                 bodyElement.find('#col1').append(module.exports.getTabElement(module.exports.base[i]));
             }
 
-            for(let i = 0; i < module.exports.tier1.length; i++){
+            for (let i = 0; i < module.exports.tier1.length; i++) {
                 bodyElement.find('#col2').append(module.exports.getTabElement(module.exports.tier1[i]));
             }
 
-            for(let i = 0; i < module.exports.tier2.length; i++){
+            for (let i = 0; i < module.exports.tier2.length; i++) {
                 bodyElement.find('#col3').append(module.exports.getTabElement(module.exports.tier2[i]));
             }
 
-            for(let i = 0; i < module.exports.tier3.length; i++){
+            for (let i = 0; i < module.exports.tier3.length; i++) {
                 bodyElement.find('#col4').append(module.exports.getTabElement(module.exports.tier3[i]));
             }
 
@@ -99,20 +99,20 @@ module.exports.update = function(){
 
             module.exports.listenToConsole();
 
-            $(window).on('hashchange', function(e){
+            $(window).on('hashchange', function(e) {
                 var inMarketPage = window.location.href.startsWith('https://screeps.com/a/#!/market/');
 
-                if (!inMarketPage){
+                if (!inMarketPage) {
                     $(window).off('hashchange');
                     module.exports.closeSocket();
                 }
-                
+
             });
 
-            $('body').on('change', '#sc-dropdown', function () {
-                if (this.value == "None"){
+            $('body').on('change', '#sc-dropdown', function() {
+                if (this.value == "None") {
                     $('#container4').hide();
-                }else{
+                } else {
                     $('#container4').show();
                     module.exports.fetchResources();
                 }
@@ -120,25 +120,25 @@ module.exports.update = function(){
             });
         }
 
-        if (!window.SCresources){
+        if (!window.SCresources) {
 
-            if (window.location.href === 'https://screeps.com/a/#!/market/all'){
-                var verifyFunc = function(){
+            if (window.location.href === 'https://screeps.com/a/#!/market/all') {
+                var verifyFunc = function() {
                     var allOrdersScope = angular.element(document.getElementsByClassName('market-all-orders ng-scope')).scope();
 
-                    if (allOrdersScope && allOrdersScope.AllOrders && allOrdersScope.AllOrders.resources && allOrdersScope.AllOrders.resources && Object.keys(allOrdersScope.AllOrders.resources).length > 0){
+                    if (allOrdersScope && allOrdersScope.AllOrders && allOrdersScope.AllOrders.resources && allOrdersScope.AllOrders.resources && Object.keys(allOrdersScope.AllOrders.resources).length > 0) {
                         return true;
                     }
 
                     return false;
                 }
-                var delayFunc = function(){
+                var delayFunc = function() {
                     var allOrdersScope = angular.element(document.getElementsByClassName('market-all-orders ng-scope')).scope();
-                    if (!window.SCresources){
+                    if (!window.SCresources) {
                         window.resources = allOrdersScope.AllOrders.resources;
                     }
-                    
-                    
+
+
                 }
 
                 module.wait(verifyFunc, 50, delayFunc);
@@ -149,43 +149,44 @@ module.exports.update = function(){
     });
 }
 
-module.exports.getTabElement = function(resource){
+module.exports.getTabElement = function(resource) {
     var amount = 0;
     // Todo inject css...
     var boostDesc = '';
     switch (resource) {
         case 'XUH2O':
-            boostDesc= 'ATK';
+            boostDesc = 'ATK';
             break;
         case 'XUHO2':
-            boostDesc= 'HRVST';
+            boostDesc = 'HRVST';
             break;
         case 'XKH2O':
-            boostDesc= 'CARRY';
+            boostDesc = 'CARRY';
             break;
         case 'XKHO2':
-            boostDesc= 'RNGD';
+            boostDesc = 'RNGD';
             break;
         case 'XLH2O':
-            boostDesc= 'REPAIR';
+            boostDesc = 'REPAIR';
             break;
         case 'XLHO2':
-            boostDesc= 'HEAL';
+            boostDesc = 'HEAL';
             break;
         case 'XZH2O':
-            boostDesc= 'DSMNTL';
+            boostDesc = 'DSMNTL';
             break;
         case 'XZHO2':
-            boostDesc= 'MOVE';
+            boostDesc = 'MOVE';
             break;
         case 'XGH2O':
-            boostDesc= 'UPGRD';
+            boostDesc = 'UPGRD';
             break;
         case 'XGHO2':
-            boostDesc= 'TOUGH';
+            boostDesc = 'TOUGH';
             break;
     }
-    var tabElementText = `<a id="sc-${resource}" class="market-resource" href="https://screeps.com/a/#!/market/all/${resource}" style="background: #333;padding: 8px 10px;margin-top: 3px;display: flex;justify-content: space-between;font-size: 14px;cursor: pointer;text-decoration: none;color: #eee;" onmouseover="this.style.backgroundColor='#444'" onmouseout="this.style.backgroundColor='#333'">
+    var shard = module.getCurrentShard() || "shard0";
+    var tabElementText = `<a id="sc-${resource}" class="market-resource" href="https://screeps.com/a/#!/market/all/${shard}/${resource}" style="background: #333;padding: 8px 10px;margin-top: 3px;display: flex;justify-content: space-between;font-size: 14px;cursor: pointer;text-decoration: none;color: #eee;" onmouseover="this.style.backgroundColor='#444'" onmouseout="this.style.backgroundColor='#333'">
         <div class="resource-name">
         <img src="https://s3.amazonaws.com/static.screeps.com/upload/mineral-icons/${resource}.png" style="margin-right: 3px;">
         ${boostDesc}
@@ -199,17 +200,17 @@ module.exports.getTabElement = function(resource){
 
     var obj = $(tabElementText);
 
-    $('body').on('click', `#sc-${resource}`, function () {
+    $('body').on('click', `#sc-${resource}`, function() {
         setTimeout(function() {
             var scope = angular.element(document.getElementsByClassName('market-all-orders-resource ng-scope')).scope();
-            if (scope && scope.ResourceOrders){
+            if (scope && scope.ResourceOrders) {
                 $('.resource-header.ng-binding > img').attr("src", `https://s3.amazonaws.com/static.screeps.com/upload/mineral-icons/${resource}.png`)
-                if (window.resources){
+                if (window.resources) {
                     scope.ResourceOrders.resourceName = window.resources[resource];
-                }else{
+                } else {
                     scope.ResourceOrders.resourceName = resource;
                 }
-                
+
                 scope.ResourceOrders.reload();
             }
         }, 50);
@@ -218,17 +219,17 @@ module.exports.getTabElement = function(resource){
     return $(tabElementText);
 }
 
-module.exports.setRoomDropdown = function(rooms){
+module.exports.setRoomDropdown = function(rooms) {
     var roomInputField = $('.orders-table__target-room.ng-scope > md-input-container > input');
     console.log("trying to set rooms");
 
-    if (roomInputField.length > 0){
-        if (!roomInputField.attr('list')){
+    if (roomInputField.length > 0) {
+        if (!roomInputField.attr('list')) {
             roomInputField.attr('list', 'sc-roomList');
             roomInputField.attr('autocomplete', 'off');
             var roomString = "";
 
-            for(let i in rooms){
+            for (let i in rooms) {
                 var roomName = rooms[i];
 
                 roomString += `<option label='${roomName}' value='${roomName}'>`
@@ -240,44 +241,44 @@ module.exports.setRoomDropdown = function(rooms){
     }
 }
 
-module.exports.updateResourceAmount = function(){
-    if (window.SCMarket){
+module.exports.updateResourceAmount = function() {
+    if (window.SCMarket) {
         var flag = localStorage.getItem('scMarketDropdown');
         var sum = {}
         console.log(sum);
 
         $('div[id^="sc-val-"]').html("0");
 
-        for(let roomName in window.SCMarket){
+        for (let roomName in window.SCMarket) {
             let room = window.SCMarket[roomName];
 
-            if (flag == "Storage & Terminal" || flag == "Storage"){
-                for (let mineral in room.storage){
-                    if (!sum[mineral]){
+            if (flag == "Storage & Terminal" || flag == "Storage") {
+                for (let mineral in room.storage) {
+                    if (!sum[mineral]) {
                         sum[mineral] = 0;
                     }
 
-                    if (room.storage[mineral]){
+                    if (room.storage[mineral]) {
                         sum[mineral] += room.storage[mineral]
                     }
                 }
             }
 
-            if (flag == "Storage & Terminal" || flag == "Terminal"){
-                for (let mineral in room.terminal){
-                    if (!sum[mineral]){
+            if (flag == "Storage & Terminal" || flag == "Terminal") {
+                for (let mineral in room.terminal) {
+                    if (!sum[mineral]) {
                         sum[mineral] = 0;
                     }
 
-                    if (room.terminal[mineral]){
+                    if (room.terminal[mineral]) {
                         sum[mineral] += room.terminal[mineral]
                     }
                 }
             }
         }
 
-        for(let mineral in sum){
-            if (sum[mineral] > 0){
+        for (let mineral in sum) {
+            if (sum[mineral] > 0) {
                 var l10nEN = new Intl.NumberFormat("en-US");
                 var amount = l10nEN.format(sum[mineral]);
                 $(`#sc-val-${mineral}`).text(amount);
@@ -288,54 +289,52 @@ module.exports.updateResourceAmount = function(){
     }
 }
 
-module.exports.fetchResources = function(){
+module.exports.fetchResources = function() {
     var command = 'console.log("<script>window.SCMarket="+(function(){var a={};for(var b in Game.rooms){var c=Game.rooms[b];c&&c.controller&&c.controller.my&&c.controller.level>=4&&(a[b]={},a[b].storage=c.storage?c.storage.store:{},a[b].terminal=c.terminal?c.terminal.store:{})}return JSON.stringify(a)})()+"</script>");console.log("Module fetched storages & terminals.");'
-    
+
     $('div[id^="sc-val-"]').html(`<svg class="uil-ellipsis" height="20px" preserveaspectratio="xMidYMid" viewbox="0 0 100 100" width="20px" xmlns="http://www.w3.org/2000/svg">
           <use xlink:href="#sc-svg-loading">
         </svg>`);
 
     var shardSelect = $("button > span > span:contains('Shard:') > b");
- 
+
     module.sendConsoleCommand(command, undefined, shardSelect ? shardSelect.text() : undefined);
 }
 
-module.exports.listenToConsole = function(){
+module.exports.listenToConsole = function() {
     var auth = JSON.parse(localStorage.getItem('auth'));
     var userid = JSON.parse(localStorage.getItem('users.code.activeWorld'))[0]._id;
     var host = "wss://screeps.com/socket/websocket"
 
     module.exports.socket = new WebSocket(host);
 
-    module.exports.socket.onopen = function(){
+    module.exports.socket.onopen = function() {
         module.exports.socket.send("auth " + auth);
     }
 
-    module.exports.socket.onmessage = function(msg){
-        if (msg.data.indexOf("auth ok") > -1){
+    module.exports.socket.onmessage = function(msg) {
+        if (msg.data.indexOf("auth ok") > -1) {
             console.log("sending subscribe to console");
 
-            var subscribe = "subscribe user:" + userid +"/console";
+            var subscribe = "subscribe user:" + userid + "/console";
             module.exports.socket.send(subscribe);
-        }
-        else if (msg.data.indexOf("SCMarket") > -1){
+        } else if (msg.data.indexOf("SCMarket") > -1) {
             var data = JSON.parse(msg.data);
             var logArray = data[1].messages.log;
-            logArray.forEach(function(log){
-                if (log.indexOf("SCMarket") > -1){
+            logArray.forEach(function(log) {
+                if (log.indexOf("SCMarket") > -1) {
                     var evalData = log.replace('<script>', '').replace('</script>', '');
                     eval(evalData);
                     module.exports.updateResourceAmount();
                 }
             });
-        }
-        else if (msg.data.indexOf("/console") > -1){
-            if (this.recievedConsole === undefined){
+        } else if (msg.data.indexOf("/console") > -1) {
+            if (this.recievedConsole === undefined) {
                 var savedDrop = localStorage.getItem('scMarketDropdown');
-                if (savedDrop !== "None"){
+                if (savedDrop !== "None") {
                     module.exports.fetchResources();
                 }
-                
+
                 this.recievedConsole = true;
             }
         }
@@ -344,14 +343,14 @@ module.exports.listenToConsole = function(){
     }
 }
 
-module.exports.closeSocket = function(){
-    if (module.exports.socket){
+module.exports.closeSocket = function() {
+    if (module.exports.socket) {
         console.log("closing socket for market")
         module.exports.socket.close();
     }
 }
 
-module.exports.getLoadingSVG = function(){
+module.exports.getLoadingSVG = function() {
     return `<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
         <symbol id="sc-svg-loading" viewbox="0 0 100 100" width="20px" height="20px" preserveaspectratio="xMidYMid" class="uil-ellipsis">
             <circle cx="84" cy="50" fill="#fff" r="2.10574" transform="rotate(0 50 50)">

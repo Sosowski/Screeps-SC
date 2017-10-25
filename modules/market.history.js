@@ -33,11 +33,11 @@ module.exports.update = function() {
                 var transactionCost = module.exports.calcTransactionCost(market.amount, roomName, targetRoomName);
                 var targetRoomIsMine = false;
 
-                var resourceIcon = `<a href="#!/market/all/${type}">
+                var resourceIcon = `<a href="#!/market/all/${shard}/${type}">
                                         <img src="https://s3.amazonaws.com/static.screeps.com/upload/mineral-icons/${type}.png" style="margin-right:0">
                                     </a>`;
 
-                var resourceEnergy = `<a href="#!/market/all/energy">
+                var resourceEnergy = `<a href="#!/market/all/${shard}/energy">
                                         <img src="https://s3.amazonaws.com/static.screeps.com/upload/mineral-icons/energy.png">
                                       </a>`;
 
@@ -84,7 +84,7 @@ module.exports.calcTransactionCost = function(amount, roomName1, roomName2) {
     var distance = module.exports.calcRoomsDistance(roomName1, roomName2, true);
 
     console.log("amount: " + amount + " roomName1: " + roomName1 + " roomName2: " + roomName2 + " distance: " + distance);
-    return Math.max(0, Math.ceil(amount * (Math.log((distance + 9) * 0.1) + 0.1)));
+    return Math.ceil(amount * (1 - Math.exp(-distance / 30)))
 }
 
 /* taken from @screeps utils */
